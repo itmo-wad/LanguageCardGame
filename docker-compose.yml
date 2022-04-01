@@ -1,0 +1,31 @@
+version: '3.3'
+
+services:
+  db:
+    image: postgres:14.1
+    container_name: wad_db
+    env_file:
+      - ./postgresql/.env
+    restart: always
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+      - ./postgresql/postgresql.conf:/etc/postgresql.conf
+    ports:
+      - "55437:5432"
+    command: postgres -c config_file=/etc/postgresql.conf
+#  python:
+#    build: ./python
+#    container_name: wad_python
+#    command: >
+#      sh -c "sleep 10 && python3 database_setup.py && python3 main.py"
+#    volumes:
+#      - ./:/code
+#    ports:
+#      - "5001:5001"
+#    restart: always
+#    depends_on:
+#      - db
+networks:
+  default:
+    external:
+      name: wad_network

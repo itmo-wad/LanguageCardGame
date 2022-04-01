@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% for word in words %}
+<h1>{{word.id}}</h1>
+<h2>{{word.ru_name}}</h2>
+<h2>{{word.en_name}}</h2>
+<br>
+{% endfor %}
+
+{% endblock %}
+
+
+
+

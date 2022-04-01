@@ -1,0 +1,7 @@
+Flask==2.0.3
+waitress==2.1.1
+Jinja2==3.0.3
+psycopg2==2.9.3
+SQLAlchemy==1.4.32
+sqlparse==0.4.2
+Werkzeug==2.0.3
