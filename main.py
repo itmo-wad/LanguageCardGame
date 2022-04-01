@@ -1,12 +1,14 @@
 import hashlib
-import os
-import uuid
 import random
-from flask import Response, Flask, render_template, redirect, make_response, request, send_from_directory, jsonify
-from sqlalchemy import or_, and_, func
+import uuid
+
 import sqlalchemy
+from flask import Response, Flask, render_template, redirect, make_response, request, send_from_directory
+from sqlalchemy import or_, func
+from waitress import serve
+
 from decorators import authenticate
-from models import User, Category, Word, Statistic, session, Session
+from models import User, Category, Word, Statistic, session
 
 app = Flask(__name__, static_url_path='/static', static_folder='static', template_folder='templates')
 UPLOAD_FOLDER = 'static/images'
@@ -129,6 +131,7 @@ def game(user, *args, **kwargs):
 @app.route("/statistic", methods=["GET"])
 @authenticate
 def statistic(user, *args, **kwargs):
+    """Function returns statistics for current user on learned words"""
     words_in_each_category = session.query(Category.id, func.count(Word.id)).join(Word, Category.id == Word.category_id,
                                                                                   isouter=True).group_by(
         Category.id).all()
@@ -168,16 +171,36 @@ def statistic(user, *args, **kwargs):
 @app.route("/")
 @authenticate
 def root(user, *args, **kwargs):
+    """Root page"""
     return redirect("/category")
 
 
-@app.route("/login")
+@app.route("/login", methods=['GET', 'POST'])
 def login(*args, **kwargs):
-    return render_template("login.html")
+    """Login page"""
+    if request.method == 'GET':
+        return render_template("login.html")
+    else:
+        data = request.form
+        email = data.get("email")
+        password = data.get("password")
+        password_hash = hashlib.md5(password.encode("utf-8")).hexdigest()
+        if not email or not password:
+            return render_template("error.html", error="Email or Password is absent")
+
+        result = session.query(User).where(User.email == email, User.password == password_hash).all()
+
+        if not result:
+            return render_template("error.html", error="Invalid Email or Password")
+        else:
+            resp = make_response(redirect("/category"))
+            resp.set_cookie("token", result[0].token)
+            return resp
 
 
 @app.route("/register", methods=['GET', 'POST'])
 def register(*args, **kwargs):
+    """Register page"""
     if request.method == "GET":
         return render_template("register.html")
     else:
@@ -204,32 +227,14 @@ def register(*args, **kwargs):
             session.rollback()
             return render_template("error.html", error="An error occurred while creating new user")
 
-        resp = make_response(redirect("/posts"))
-        resp.set_cookie("token", token)
-        return resp
-
-
-@app.route("/auth", methods=['POST'])
-def auth(*args, **kwargs):
-    data = request.form
-    email = data.get("email")
-    password = data.get("password")
-    password_hash = hashlib.md5(password.encode("utf-8")).hexdigest()
-    if not email or not password:
-        return render_template("error.html", error="Email or Password is absent")
-
-    result = session.query(User).where(User.email == email, User.password == password_hash).all()
-
-    if not result:
-        return render_template("error.html", error="Invalid Email or Password")
-    else:
         resp = make_response(redirect("/category"))
-        resp.set_cookie("token", result[0].token)
+        resp.set_cookie("token", token)
         return resp
 
 
 @app.route("/logout")
 def logout(*args, **kwargs):
+    """Logout page"""
     resp = make_response(redirect("/login"))
     resp.set_cookie("token", "")
     return resp
@@ -237,5 +242,4 @@ def logout(*args, **kwargs):
 
 if __name__ == "__main__":
     print("Launched!")
-    # serve(app, host="0.0.0.0", port=5001)
-    app.run(host="127.0.0.1", port="5001", debug=True)
+    serve(app, host="0.0.0.0", port=5001)
