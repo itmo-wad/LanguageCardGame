@@ -46,6 +46,6 @@ class Statistic(AbstractBase):
 
 
 
-engine = create_engine('postgresql+psycopg2://wad-adm:StrongPassw0rd@127.0.0.1:55437/wad_db')
+engine = create_engine('postgresql+psycopg2://wad-adm:StrongPassw0rd@db:5432/wad_db')
 Session = sessionmaker(bind=engine)
 session = Session()  # type: sqlalchemy.orm.Session
