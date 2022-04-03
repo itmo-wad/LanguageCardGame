@@ -3,7 +3,7 @@ import random
 import uuid
 
 import sqlalchemy
-from flask import Response, Flask, render_template, redirect, make_response, request, send_from_directory
+from flask import Response, Flask, render_template, redirect, make_response, request, send_from_directory, jsonify
 from sqlalchemy import or_, func
 from waitress import serve
 

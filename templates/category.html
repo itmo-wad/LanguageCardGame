@@ -2,17 +2,18 @@
 
 {% block content %}
 
-<h1>User: #{{user.id }} {{user.surname}} {{user.name}}</h1>
+<h1 class="text-center">Категории</h1>
+<div class="d-flex flex-wrap">
+  {% for category in categories %}
 
-{% for category in categories %}
-<h1>{{category.id}}</h1>
-<h2>{{category.ru_name}}</h2>
-<h2>{{category.en_name}}</h2>
-<h2>{{category.image}}</h2>
-<br>
-{% endfor %}
-
+  <div class="card m-4" style="width: 18rem;">
+    <img class="card-img-top" src="{{category.image if category.image else '/static/images/default.jpg'}}">
+    <div class="card-body">
+      <h5 class="card-title"> {{category.ru_name}} </h5>
+      <p class="card-text"> {{category.en_name}} </p>
+      <a href="{{url_for('word',category_id=category.id)}}" class="btn btn-primary">Go to learn</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}
-
-
-
