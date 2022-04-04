@@ -146,7 +146,7 @@ def statistic(user, *args, **kwargs):
             if statistic.is_memorized:
                 memorized_words_in_each_category[category.id] += 1
         else:
-            memorized_words_in_each_category[category.id] = 0
+            memorized_words_in_each_category[category.id] = 1
     statistic = []
     for category in session.query(Category).all():
         words_in_category = 0
