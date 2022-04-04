@@ -1,14 +1,29 @@
 {% extends "base.html" %}
-
 {% block content %}
+    <h1 class="text-center">Статистика</h1>
+    <div class="d-flex justify-content-center">
 
-{% for stat in statistic %}
-ID: {{stat.id}}
-EN название категории: {{stat.ru_name}}
-RU название категории: {{stat.en_name}}
-Слов в категории: {{stat.total_words}}
-Запомненных слов: {{stat.memorized_words}}
-<br>
-{% endfor %}
-
+        <table class="table" style="width: 90%">
+            <tr>
+                <th scope="col">Категория</th>
+                <th scope="col" class="text-center">Запомнено слов</th>
+                <th scope="col" class="text-center ">Всего слов</th>
+            </tr>
+            <tbody>
+            {% for statistic_ in statistic %}
+                <tr class="{{ 'table-success' if statistic_.total_words - statistic_.memorized_words == 0 }}">
+                    <td scope="row">
+                        <p>{{ statistic_.en_name }} / {{ statistic_.ru_name }}</p>
+                    </td>
+                    <td class="text-center">
+                        <p> {{ statistic_.memorized_words }}</p>
+                    </td>
+                    <td class="text-center">
+                        <p>{{ statistic_.total_words }}</p>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
