@@ -3,11 +3,11 @@
 {% block content %}
 
 {% for stat in statistic %}
-{{stat.id}}
-{{stat.ru_name}}
-{{stat.en_name}}
-{{stat.words_in_category}}
-{{stat.memorized_words}}
+ID: {{stat.id}}
+EN название категории: {{stat.ru_name}}
+RU название категории: {{stat.en_name}}
+Слов в категории: {{stat.total_words}}
+Запомненных слов: {{stat.memorized_words}}
 <br>
 {% endfor %}
 
