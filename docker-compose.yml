@@ -11,7 +11,7 @@ services:
       - ./postgresql/data:/var/lib/postgresql/data
       - ./postgresql/postgresql.conf:/etc/postgresql.conf
     ports:
-      - "55437:5432"
+      - "127.0.0.1:55437:5432"
     command: postgres -c config_file=/etc/postgresql.conf
   python:
     build: ./python
@@ -21,7 +21,7 @@ services:
     volumes:
       - ./:/code
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     restart: always
     depends_on:
       - db
