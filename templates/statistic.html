@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1 class="text-center">Статистика</h1>
+    <h1 class="text-center">Statistic</h1>
     <div class="d-flex justify-content-center">
 
         <table class="table" style="width: 90%">
             <tr>
-                <th scope="col">Категория</th>
-                <th scope="col" class="text-center">Запомнено слов</th>
-                <th scope="col" class="text-center ">Всего слов</th>
+                <th scope="col">Category</th>
+                <th scope="col" class="text-center">Memorized words</th>
+                <th scope="col" class="text-center ">Total words</th>
             </tr>
             <tbody>
             {% for statistic_ in statistic %}
