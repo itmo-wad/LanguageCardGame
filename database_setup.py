@@ -2,9 +2,10 @@ import csv
 
 import sqlalchemy
 
-from models import Base, engine, session, Category, Word
+from models import Base, engine, Session, Category, Word
 
 Base.metadata.create_all(engine)
+session = Session()
 
 with open("static/Categories.csv", 'r', newline='', encoding='utf-8-sig') as f:
     reader = csv.reader(f, delimiter=';')
@@ -29,3 +30,5 @@ for word in words:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
         session.rollback()
+
+Session.remove()

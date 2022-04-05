@@ -8,22 +8,25 @@ from sqlalchemy import or_, func
 from waitress import serve
 
 from decorators import authenticate
-from models import User, Category, Word, Statistic, session
+from models import User, Category, Word, Statistic, Session
 
 app = Flask(__name__, static_url_path='/static', static_folder='static', template_folder='templates')
 UPLOAD_FOLDER = 'static/images'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = 'Wow a Secret!'
 
 
 @app.route("/category", methods=["GET"])
 @authenticate
 def category(user, *args, **kwargs):
     """Function returns all existing categories"""
+    session = Session()
     categories = []
     all_categories = session.query(Category).all()
     for category in all_categories:
         categories.append({"id": category.id, "ru_name": category.ru_name, "en_name": category.en_name,
                            "image": category.image})
+    Session.remove()
     return render_template("category.html", categories=categories, user=user)
 
 
@@ -31,29 +34,29 @@ def category(user, *args, **kwargs):
 @authenticate
 def word(user, category_id, *args, **kwargs):
     """Function returns <count> words from category <category_id>"""
-    try:
-        count = int(request.args.get("count"))
-    except ValueError:
-        count = 10
-    except TypeError:
-        count = 10
+    session = Session()
 
     words = []
     all_words = []
-    new_or_memorized_words = session.query(Word).join(Statistic, Word.id == Statistic.word_id, isouter=True).filter(
-        Word.category_id == category_id, or_(Statistic.is_memorized == None, Statistic.is_memorized == True),
-        or_(Statistic.user_id == None, Statistic.user_id == user["id"])).all()
 
-    forgotten_words = session.query(Word).join(Statistic, Word.id == Statistic.word_id, isouter=True).filter(
-        Word.category_id == category_id, Statistic.is_memorized == False,
-        or_(Statistic.user_id == None, Statistic.user_id == user["id"])).all()
+    new_or_memorized_words = session.query(Word).join(Statistic, (Word.id == Statistic.word_id) &
+                                                      (Word.category_id == category_id) & (
+                                                                  Statistic.user_id == user["id"]),
+                                                      isouter=True).filter(
+        Word.category_id == category_id, or_(Statistic.is_memorized == None, Statistic.is_memorized == True)).all()
 
-    new_or_memorized_words_count = count // 2
-    forgotten_words_count = count - new_or_memorized_words_count
+
+    forgotten_words = session.query(Word).join(Statistic, (Word.id == Statistic.word_id) &
+                                               (Word.category_id == category_id) & (Statistic.user_id == user["id"]),
+                                               isouter=True).filter(
+        Word.category_id == category_id, or_(Statistic.is_memorized == None, Statistic.is_memorized == False)).all()
+
+    new_or_memorized_words_count = 5
+    forgotten_words_count = 5
 
     if len(forgotten_words) < forgotten_words_count:
         forgotten_words_count = len(forgotten_words)
-        new_or_memorized_words_count = count - forgotten_words_count
+        new_or_memorized_words_count = 10 - forgotten_words_count
 
     try:
         all_words.extend(random.sample(new_or_memorized_words, new_or_memorized_words_count))
@@ -66,6 +69,7 @@ def word(user, category_id, *args, **kwargs):
 
     for word in all_words:
         words.append({"id": word.id, "ru_name": word.ru_name, "en_name": word.en_name})
+    Session.remove()
     return render_template("game.html", words=words, user=user)
 
 
@@ -92,6 +96,7 @@ def game(user, *args, **kwargs):
         HTTP STATUS 404 in case word <word_id> was not found
         HTTP STATUS 500 in case internal error
     """
+    session = Session()
     try:
         data = request.get_json()
     except Exception:
@@ -110,12 +115,14 @@ def game(user, *args, **kwargs):
 
     instance = session.query(Word).where(Word.id == word_id).first()
     if not instance:
+        Session.remove()
         return Response(status=404)
 
     instance = session.query(Statistic).where(Statistic.word_id == word_id, Statistic.user_id == user["id"])
     if instance.first():
         instance.update({'is_memorized': is_memorized})
         session.commit()
+        Session.remove()
         return Response(status=204)
     else:
         try:
@@ -124,7 +131,9 @@ def game(user, *args, **kwargs):
             session.commit()
         except sqlalchemy.exc.IntegrityError:
             session.rollback()
+            Session.remove()
             return Response(status=500)
+        Session.remove()
         return Response(status=201)
 
 
@@ -132,6 +141,7 @@ def game(user, *args, **kwargs):
 @authenticate
 def statistic(user, *args, **kwargs):
     """Function returns statistics for current user on learned words"""
+    session = Session()
     words_in_each_category = session.query(Category.id, func.count(Word.id)).join(Word, Category.id == Word.category_id,
                                                                                   isouter=True).group_by(
         Category.id).all()
@@ -165,6 +175,7 @@ def statistic(user, *args, **kwargs):
             "total_words": words_in_category,
             "memorized_words": memorized_words
         })
+    Session.remove()
     return render_template("statistic.html", statistic=statistic, user=user)
 
 
@@ -181,6 +192,7 @@ def login(*args, **kwargs):
     if request.method == 'GET':
         return render_template("login.html")
     else:
+        session = Session()
         data = request.form
         email = data.get("email")
         password = data.get("password")
@@ -191,10 +203,12 @@ def login(*args, **kwargs):
         result = session.query(User).where(User.email == email, User.password == password_hash).all()
 
         if not result:
+            Session.remove()
             return render_template("error.html", error="Invalid Email or Password")
         else:
             resp = make_response(redirect("/category"))
             resp.set_cookie("token", result[0].token)
+            Session.remove()
             return resp
 
 
@@ -204,6 +218,7 @@ def register(*args, **kwargs):
     if request.method == "GET":
         return render_template("register.html")
     else:
+        session = Session()
         data = request.form
         email = data.get("email")
         password = data.get("password")
@@ -213,9 +228,11 @@ def register(*args, **kwargs):
 
         result = session.query(User).where(User.email == email).all()
         if result:
+            Session.remove()
             return render_template("error.html", error="You can't use this email, choose another one")
 
         if not any([email, password, name, surname]):
+            Session.remove()
             return render_template("error.html", error="Data for registration is not full")
 
         token = str(uuid.uuid4())
@@ -225,10 +242,12 @@ def register(*args, **kwargs):
             session.commit()
         except sqlalchemy.exc.IntegrityError:
             session.rollback()
+            Session.remove()
             return render_template("error.html", error="An error occurred while creating new user")
 
         resp = make_response(redirect("/category"))
         resp.set_cookie("token", token)
+        Session.remove()
         return resp
 
 
@@ -242,4 +261,4 @@ def logout(*args, **kwargs):
 
 if __name__ == "__main__":
     print("Launched!")
-    serve(app, host="0.0.0.0", port=5001)
+    serve(app, host="0.0.0.0", port=5001, threads=6)
